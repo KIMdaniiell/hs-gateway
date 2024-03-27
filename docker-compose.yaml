@@ -1,0 +1,14 @@
+services:
+  gateway-server:
+    container_name: gateway-server-container
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${APP_PORT}:9099"
+    networks:
+      hls-lab-network:
+
+networks:
+  hls-lab-network:
+    external: true
