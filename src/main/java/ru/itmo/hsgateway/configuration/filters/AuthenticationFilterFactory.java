@@ -2,6 +2,7 @@ package ru.itmo.hsgateway.configuration.filters;
 
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
+import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -10,6 +11,8 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import ru.itmo.hsgateway.model.MessageDTO;
 import ru.itmo.hsgateway.proxy.AuthProxy;
+
+import java.nio.charset.StandardCharsets;
 
 @Component
 public class AuthenticationFilterFactory
@@ -40,13 +43,24 @@ public class AuthenticationFilterFactory
                 System.out.println("Запрос не содержит заголовок AUTHORIZATION");
                 ServerHttpResponse response = exchange.getResponse();
                 response.setStatusCode(HttpStatus.UNAUTHORIZED);
-                return response.setComplete();
+                return response.writeWith(Mono.just(response.bufferFactory()
+                        .wrap("{\"message\": \"The request does not contain the AUTHORIZATION header\"}"
+                                .getBytes(StandardCharsets.UTF_8))));
+//                return response.setComplete();
             }
 
             // Шаг 2: Содержит токен в заголовке или нет?
             String authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION).get(0);
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 authHeader = authHeader.substring(7);
+            } else {
+                System.out.println("В заголовке AUTHORIZATION запроса не содержится Bearer токен");
+                ServerHttpResponse response = exchange.getResponse();
+                response.setStatusCode(HttpStatus.UNAUTHORIZED);
+                return response.writeWith(Mono.just(response.bufferFactory()
+                        .wrap("{\"message\": \"The AUTHORIZATION header of the request does not contain a Bearer token\"}"
+                                .getBytes(StandardCharsets.UTF_8))));
+//                return response.setComplete();
             }
 
             // Шаг 3: Валидация токена
@@ -66,7 +80,14 @@ public class AuthenticationFilterFactory
                             } else {
                                 ServerHttpResponse response = exchange.getResponse();
                                 response.setStatusCode(HttpStatus.UNAUTHORIZED);
-                                return response.setComplete();
+                                return response.writeWith(Mono.just(response.bufferFactory()
+                                        .wrap("{\n    \"timestamp\": \"%s\",\n \"summary\": \"%s\",\n \"message\": \"%s\",\n \"token\": \"%s\"\n }"
+                                                .formatted(r.getTimestamp().toString(),
+                                                        r.getSummary(),
+                                                        r.getMessage(),
+                                                        r.getToken())
+                                                .getBytes(StandardCharsets.UTF_8))));
+//                                return response.setComplete();
                             }
                         });
             } catch (Exception e) {
