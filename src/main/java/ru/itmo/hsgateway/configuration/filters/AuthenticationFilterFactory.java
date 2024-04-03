@@ -43,6 +43,7 @@ public class AuthenticationFilterFactory
                 System.out.println("Запрос не содержит заголовок AUTHORIZATION");
                 ServerHttpResponse response = exchange.getResponse();
                 response.setStatusCode(HttpStatus.UNAUTHORIZED);
+                response.getHeaders().add("Content-Type", "application/json");
                 return response.writeWith(Mono.just(response.bufferFactory()
                         .wrap("{\"message\": \"The request does not contain the AUTHORIZATION header\"}"
                                 .getBytes(StandardCharsets.UTF_8))));
@@ -57,6 +58,7 @@ public class AuthenticationFilterFactory
                 System.out.println("В заголовке AUTHORIZATION запроса не содержится Bearer токен");
                 ServerHttpResponse response = exchange.getResponse();
                 response.setStatusCode(HttpStatus.UNAUTHORIZED);
+                response.getHeaders().add("Content-Type", "application/json");
                 return response.writeWith(Mono.just(response.bufferFactory()
                         .wrap("{\"message\": \"The AUTHORIZATION header of the request does not contain a Bearer token\"}"
                                 .getBytes(StandardCharsets.UTF_8))));
@@ -80,6 +82,7 @@ public class AuthenticationFilterFactory
                             } else {
                                 ServerHttpResponse response = exchange.getResponse();
                                 response.setStatusCode(HttpStatus.UNAUTHORIZED);
+                                response.getHeaders().add("Content-Type", "application/json");
                                 return response.writeWith(Mono.just(response.bufferFactory()
                                         .wrap("{\n    \"timestamp\": \"%s\",\n \"summary\": \"%s\",\n \"message\": \"%s\",\n \"token\": \"%s\"\n }"
                                                 .formatted(r.getTimestamp().toString(),
